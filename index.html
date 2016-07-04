@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Welcome to Vue</title>
+	<script src="vue.js"></script>
+	<style>
+		#canvas {
+/*			position: absolute;
+*/			width: 400px;
+			height: 400px;
+			cursor: crosshair;
+		}
+		#image {
+			position: absolute;
+		}
+		.annotation {
+			border: 1px dotted #1c90f3;
+			position: absolute;
+		}
+		.outline {
+			border: 1px dotted #999;
+			position: absolute;
+		}
+	</style>
+</head>
+<body>
+	<div id="app">
+		<div id="canvas" v-on:mousedown="beginDraw" v-on:mousemove="drawing" v-on:mouseup="drawn">
+			<img id="image" draggable="false" src="https://vuejs.org/images/logo.png" alt="Vue logo">
+			<annotation v-for="annotation in annotations" :props="annotation">
+			</annotation>
+			<outline v-if="newAnnotationDrawing" :props="newAnnotation"></outline>
+		</div>
+	</div>
+
+	<template id="annotation-template">
+		<div class="annotation" v-bind:style="size">{{ props.label }}</div>
+	</template>
+
+	<template id="outline-template">
+		<div class="outline" v-bind:style="size"></div>
+	</template>
+
+	<script>
+	Vue.config.devtools = true;
+	var sizeToStyle = function(props) {
+		return {
+			left: props.x + 'px',
+			top: props.y + 'px',
+			width: props.width + 'px',
+			height: props.height + 'px'
+		};
+	};
+	Vue.component('annotation', {
+		props: ['props', 'label', 'status'],
+		template: '#annotation-template',
+		computed: {
+			size: function(){
+				return sizeToStyle(this.props);
+			}
+		}
+	});
+	Vue.component('outline', {
+		props: ['props'],
+		template: '#outline-template',
+		computed: {
+			size: {
+				cache: false,
+				get: function(){
+					return sizeToStyle(this.props);
+				},
+			}
+		}
+	});
+
+	new Vue({
+	  el: '#app',
+	  data: {
+		greeting: 'Welcome to your Vue.js app!',
+		newAnnotation: null,
+		newAnnotationDrawing: false,
+		annotations: [
+			{
+				x: 118,
+				y: 123,
+				width: 182,
+				height: 139,
+				label: "cat",
+			},
+			{
+				x: 229,
+				y: 301,
+				width: 138,
+				height: 110,
+				label: "bear",
+			}
+		]
+	  },
+	  methods: {
+		beginDraw: function(e) {
+			this.newAnnotationDrawing = true;
+			this.newAnnotation = { x: e.clientX, y: e.clientY, width:1, height:1 };
+		},
+		drawing: function(e) {
+			if (!this.newAnnotationDrawing) return;
+			this.newAnnotation.width = e.clientX - this.newAnnotation.x;
+			this.newAnnotation.height = e.clientY - this.newAnnotation.y;
+		},
+		drawn: function(e) {
+			this.annotations.push(this.newAnnotation);
+			this.newAnnotationDrawing = false;
+			this.newAnnotation = null;
+		}
+	  }
+	})
+	</script>
+</body>
+</html>
