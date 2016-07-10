@@ -5,13 +5,9 @@
 	<script src="vue.js"></script>
 	<style>
 		#canvas {
-/*			position: absolute;
-*/			width: 400px;
+			width: 400px;
 			height: 400px;
 			cursor: crosshair;
-		}
-		#image {
-			position: absolute;
 		}
 		.annotation {
 			border: 1px dotted #1c90f3;
@@ -24,13 +20,11 @@
 	</style>
 </head>
 <body>
+	<h1>annotation demo</h1>
 	<div id="app">
-		<div id="canvas" v-on:mousedown="beginDraw" v-on:mousemove="drawing" v-on:mouseup="drawn">
+		<anotatable :annotations="annotations">
 			<img id="image" draggable="false" src="https://vuejs.org/images/logo.png" alt="Vue logo">
-			<annotation v-for="annotation in annotations" :props="annotation">
-			</annotation>
-			<outline v-if="newAnnotationDrawing" :props="newAnnotation"></outline>
-		</div>
+		</anotatable>
 	</div>
 
 	<template id="annotation-template">
@@ -39,6 +33,15 @@
 
 	<template id="outline-template">
 		<div class="outline" v-bind:style="size"></div>
+	</template>
+
+	<template id="anotatable-template">
+		<div id="canvas" v-on:mousedown="beginDraw" v-on:mousemove="drawing" v-on:mouseup="drawn">
+			<slot>请在此填充内容</slot>
+			<annotation v-for="annotation in annotations" :props="annotation" :label="annotation.label">
+			</annotation>
+			<outline v-if="newAnnotationDrawing" :props="newAnnotation"></outline>
+		</div>
 	</template>
 
 	<script>
@@ -72,13 +75,37 @@
 			}
 		}
 	});
+	Vue.component('anotatable', {
+		template: '#anotatable-template',
+		props: ['annotations'],
+		data: function() {
+			return {
+				newAnnotation: null,
+				newAnnotationDrawing: false,
+			}
+		},
+		methods: {
+			beginDraw: function(e) {
+				this.newAnnotationDrawing = true;
+				this.newAnnotation = { x: e.clientX, y: e.clientY, width:1, height:1 };
+			},
+			drawing: function(e) {
+				if (!this.newAnnotationDrawing) return;
+				this.newAnnotation.width = e.clientX - this.newAnnotation.x;
+				this.newAnnotation.height = e.clientY - this.newAnnotation.y;
+			},
+			drawn: function(e) {
+				this.annotations.push(this.newAnnotation);
+				this.newAnnotationDrawing = false;
+				this.newAnnotation = null;
+			}
+		}
+	});
 
 	new Vue({
 	  el: '#app',
 	  data: {
 		greeting: 'Welcome to your Vue.js app!',
-		newAnnotation: null,
-		newAnnotationDrawing: false,
 		annotations: [
 			{
 				x: 118,
@@ -97,20 +124,6 @@
 		]
 	  },
 	  methods: {
-		beginDraw: function(e) {
-			this.newAnnotationDrawing = true;
-			this.newAnnotation = { x: e.clientX, y: e.clientY, width:1, height:1 };
-		},
-		drawing: function(e) {
-			if (!this.newAnnotationDrawing) return;
-			this.newAnnotation.width = e.clientX - this.newAnnotation.x;
-			this.newAnnotation.height = e.clientY - this.newAnnotation.y;
-		},
-		drawn: function(e) {
-			this.annotations.push(this.newAnnotation);
-			this.newAnnotationDrawing = false;
-			this.newAnnotation = null;
-		}
 	  }
 	})
 	</script>
