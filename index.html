@@ -30,7 +30,7 @@
 			border: 2px solid white;
 			text-decoration: none;
 			background-color: black;
-			/*display: none;*/
+			display: none;
 		}
 		.outline {
 			border: 1px dotted #999;
@@ -47,17 +47,21 @@
 	<h1>annotation demo</h1>
 	<div id="app">
 		<annotatable :annotations="annotations">
-			<img id="image" draggable="false" src="https://vuejs.org/images/logo.png" alt="Vue logo">
+			<img id="image" draggable="false" src="http://vuejs.org/images/logo.png" alt="Vue logo">
 		</annotatable>
 	</div>
 
 	<template id="annotation-template">
 		<div class="annotation" v-bind:style="size">
 			{{ label }}
-			<div v-if="isNew" class="annotation-input">
-				<input type="text" name="annotation_text" autofocus @keyup.enter="labeled">
-			</div>
-			<a class="btn-close" href="#" v-on:click="close">&times;</a>
+			<component v-if="isNew" :is="input" @keyup.enter="labeled"></component>
+			<a class="btn-close" href="#" @click="close" @mousedown.stop @mouseup.stop>&times;</a>
+		</div>
+	</template>
+
+	<template id="input-text-template">
+		<div class="annotation-input" @mousedown.stop @mouseup.stop>
+			<input type="text" name="annotation_text" autofocus>
 		</div>
 	</template>
 
@@ -68,7 +72,7 @@
 	<template id="annotatable-template">
 		<div id="canvas" v-on:mousedown="beginDraw" v-on:mousemove="drawing" v-on:mouseup="drawn">
 			<slot>请在此填充内容</slot>
-			<annotation v-for="annotation in annotations" :props="annotation">
+			<annotation v-for="annotation in annotations" :props="annotation" input="input-text">
 			</annotation>
 			<outline v-if="newAnnotationDrawing" :props="newAnnotation"></outline>
 		</div>
@@ -88,7 +92,7 @@
 		return Math.random().toString(36).substr(2, 9);
 	};
 	Vue.component('annotation', {
-		props: ['props'],
+		props: ['props', 'input'],
 		template: '#annotation-template',
 		computed: {
 			size: function(){
@@ -114,10 +118,17 @@
 			},
 			close: function(e) {
 				console.log('remove', this.id);
-				// this.$dispatch('remove', {id: this.id});
+				this.$dispatch('remove', {id: this.id});
+			}
+		},
+		components: {
+			InputText: {
+				template: '#input-text-template',
 			}
 		}
+
 	});
+
 	Vue.component('outline', {
 		props: ['props'],
 		template: '#outline-template',
