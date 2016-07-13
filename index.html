@@ -46,7 +46,7 @@
 <body>
 	<h1>annotation demo</h1>
 	<div id="app">
-		<annotatable :annotations="annotations">
+		<annotatable :annotations="annotations" :options="options">
 			<img id="image" draggable="false" src="http://vuejs.org/images/logo.png" alt="Vue logo">
 		</annotatable>
 	</div>
@@ -54,14 +54,23 @@
 	<template id="annotation-template">
 		<div class="annotation" v-bind:style="size">
 			{{ label }}
-			<component v-if="isNew" :is="input" @keyup.enter="labeled"></component>
+			<component v-if="isNew" :is="input" :options="options"></component>
 			<a class="btn-close" href="#" @click="close" @mousedown.stop @mouseup.stop>&times;</a>
 		</div>
 	</template>
 
 	<template id="input-text-template">
 		<div class="annotation-input" @mousedown.stop @mouseup.stop>
-			<input type="text" name="annotation_text" autofocus>
+			<input type="text" name="annotation_text" autofocus @keyup.enter="edit">
+		</div>
+	</template>
+
+	<template id="input-select-template">
+		<div class="annotation-input" @mousedown.stop @mouseup.stop>
+			<select name="select" @change="edit">
+				<option selected>--</option>
+				<option v-for="option in options">{{option}}</option>
+			</select>
 		</div>
 	</template>
 
@@ -72,7 +81,7 @@
 	<template id="annotatable-template">
 		<div id="canvas" v-on:mousedown="beginDraw" v-on:mousemove="drawing" v-on:mouseup="drawn">
 			<slot>请在此填充内容</slot>
-			<annotation v-for="annotation in annotations" :props="annotation" input="input-text">
+			<annotation v-for="annotation in annotations" :props="annotation" input="input-select" :options="options">
 			</annotation>
 			<outline v-if="newAnnotationDrawing" :props="newAnnotation"></outline>
 		</div>
@@ -92,7 +101,7 @@
 		return Math.random().toString(36).substr(2, 9);
 	};
 	Vue.component('annotation', {
-		props: ['props', 'input'],
+		props: ['props', 'input', 'options'],
 		template: '#annotation-template',
 		computed: {
 			size: function(){
@@ -121,14 +130,33 @@
 				this.$dispatch('remove', {id: this.id});
 			}
 		},
+		events: {
+			edit: function(msg) {
+				this.$dispatch('labeled', {id: this.id, label: msg.label});
+			}
+		},
 		components: {
 			InputText: {
 				template: '#input-text-template',
+				methods: {
+					edit: function(e) {
+						this.$dispatch('edit', {label: e.target.value});
+					}
+				}
 			},
 			InputNone: {
 				template: '',
 				created: function() {
 					this.$dispatch('labeled');
+				}
+			},
+			InputSelect: {
+				template: '#input-select-template',
+				props: ['options'],
+				methods: {
+					edit: function(e) {
+						this.$dispatch('edit', {label: e.target.value});
+					}
 				}
 			}
 		}
@@ -149,7 +177,7 @@
 	});
 	Vue.component('annotatable', {
 		template: '#annotatable-template',
-		props: ['annotations'],
+		props: ['annotations', 'options'],
 		data: function() {
 			return {
 				newAnnotation: null,
@@ -223,7 +251,8 @@
 				height: 110,
 				label: "bear",
 			}
-		]
+		],
+		options: ['cat', 'bear', 'dog']
 	  },
 	  methods: {
 	  }
