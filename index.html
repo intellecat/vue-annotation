@@ -44,7 +44,7 @@
 	</style>
 </head>
 <body>
-	<h1>annotation demo</h1>
+	<h1>demo</h1>
 	<div id="app">
 		<annotatable :annotations="annotations" :options="options">
 			<img id="image" draggable="false" src="http://vuejs.org/images/logo.png" alt="Vue logo">
@@ -54,8 +54,9 @@
 	<template id="annotation-template">
 		<div class="annotation" v-bind:style="size">
 			{{ label }}
-			<component v-if="isNew" :is="input" :options="options"></component>
+			<component v-show="editable" :is="input" :options="options"></component>
 			<a class="btn-close" href="#" @click="close" @mousedown.stop @mouseup.stop>&times;</a>
+			<a class="btn-edit" href="#" @click="toEdit" @mousedown.stop @mouseup.stop>E</a>
 		</div>
 	</template>
 
@@ -67,9 +68,9 @@
 
 	<template id="input-select-template">
 		<div class="annotation-input" @mousedown.stop @mouseup.stop>
-			<select name="select" @change="edit">
-				<option selected>--</option>
-				<option v-for="option in options">{{option}}</option>
+			<select name="select" @change="edit" v-model="label">
+				<option value="none">--</option>
+				<option v-for="option in options" value={{option}}>{{option}}</option>
 			</select>
 		</div>
 	</template>
@@ -100,6 +101,16 @@
 	var randomId = function() {
 		return Math.random().toString(36).substr(2, 9);
 	};
+	var inputMixin = {
+		data: function(){
+			return {label: 'none'};
+		},
+		methods: {
+			edit: function(e) {
+				this.$dispatch('edit', {label: e.target.value});
+			}
+		}
+	};
 	Vue.component('annotation', {
 		props: ['props', 'input', 'options'],
 		template: '#annotation-template',
@@ -107,8 +118,8 @@
 			size: function(){
 				return sizeToStyle(this.props);
 			},
-			isNew: function() {
-				return this.props.status == 'new';
+			editable: function() {
+				return this.props.status == 'new' || this.props.status == 'edit';
 			},
 			label: function() {
 				return this.props.label;
@@ -128,6 +139,9 @@
 			close: function(e) {
 				console.log('remove', this.id);
 				this.$dispatch('remove', {id: this.id});
+			},
+			toEdit: function(e) {
+				this.$dispatch('toEdit', {id: this.id});
 			}
 		},
 		events: {
@@ -138,11 +152,7 @@
 		components: {
 			InputText: {
 				template: '#input-text-template',
-				methods: {
-					edit: function(e) {
-						this.$dispatch('edit', {label: e.target.value});
-					}
-				}
+				mixins: [inputMixin]
 			},
 			InputNone: {
 				template: '',
@@ -153,11 +163,7 @@
 			InputSelect: {
 				template: '#input-select-template',
 				props: ['options'],
-				methods: {
-					edit: function(e) {
-						this.$dispatch('edit', {label: e.target.value});
-					}
-				}
+				mixins: [inputMixin]
 			}
 		}
 
@@ -228,7 +234,14 @@
 				this.annotations = this.annotations.filter(function(annotation){
 					return annotation.id != msg.id;
 				})
-			}
+			},
+			toEdit: function(msg) {
+				for (var i = 0; i < this.annotations.length; i++) {
+					if (this.annotations[i].id == msg.id) {
+						this.annotations[i].status = 'edit';
+					}
+				}
+			},
 		}
 	});
 
@@ -238,18 +251,22 @@
 		greeting: 'Welcome to your Vue.js app!',
 		annotations: [
 			{
+				id: randomId(),
 				x: 118,
 				y: 123,
 				width: 182,
 				height: 139,
 				label: "cat",
+				status: 'labeled'
 			},
 			{
+				id: randomId(),
 				x: 229,
 				y: 301,
 				width: 138,
 				height: 110,
 				label: "bear",
+				status: 'labeled'
 			}
 		],
 		options: ['cat', 'bear', 'dog']
