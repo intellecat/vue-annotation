@@ -22,15 +22,17 @@ export default {
 		return {
 			newAnnotation: null,
 			newAnnotationDrawing: false,
-			lock: false
+			lock: false,
+			position: null
 		}
 	},
 	methods: {
 		beginDraw: function(e) {
 			if (this.lock) return;
 			this.newAnnotationDrawing = true;
-			this.newAnnotation = { 
-				x: e.clientX, y: e.clientY, width:1, height:1, 
+			this.position = e.currentTarget.getBoundingClientRect();
+			this.newAnnotation = {
+				x: e.clientX - this.position.left, y: e.clientY - this.position.top, width:1, height:1,
 				status:'new',
 				label: '',
 				id: randomId()
@@ -38,8 +40,8 @@ export default {
 		},
 		drawing: function(e) {
 			if (!this.newAnnotationDrawing) return;
-			this.newAnnotation.width = e.clientX - this.newAnnotation.x;
-			this.newAnnotation.height = e.clientY - this.newAnnotation.y;
+			this.newAnnotation.width = e.clientX - this.newAnnotation.x - this.position.left;
+			this.newAnnotation.height = e.clientY - this.newAnnotation.y - this.position.top;
 		},
 		drawn: function(e) {
 			if (this.lock) return;
@@ -85,5 +87,6 @@ export default {
 <style>
 .annotatable {
 	cursor: crosshair;
+	position: relative;
 }
 </style>
